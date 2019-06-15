@@ -46,11 +46,14 @@ extension ViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        func addObserver() {
+		//傳入 viewController 就不會 leak 了
+		func addObserver(viewController: ViewController) {
             var observer: NSObjectProtocol? = nil
-            observer = NotificationCenter.default.addObserver(forName: Notification.Name.helloTesting, object: nil, queue: nil, using: { (_) in
-                guard let observer = observer else { return }
-                NotificationCenter.default.removeObserver(observer)
+            observer = NotificationCenter.default.addObserver(forName: Notification.Name.helloTesting, object: nil, queue: nil, using: { [weak viewController] (_) in
+                guard let obs = observer, let viewController = viewController else { return }
+                NotificationCenter.default.removeObserver(obs)
+				observer = nil
+				print(viewController.data)
             })
         }
         
@@ -58,7 +61,7 @@ extension ViewController: UITableViewDataSource {
         cell.textLabel?.text = self.data[indexPath.row]
         cell.didSelected = { [weak self] in
             guard let self = self else { return nil }
-            addObserver()
+			addObserver(viewController: self)
             return self.data[indexPath.row]
         }
         return cell
